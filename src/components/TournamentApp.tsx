@@ -4,30 +4,26 @@ import { ParticipantList } from './ParticipantList';
 import { Bracket } from './Bracket';
 import { ProModal } from './ProModal';
 import { useUserStore } from '../store/userStore';
-import { Tournament } from '../types';
 import { Link } from 'react-router-dom';
 
 export function TournamentApp() {
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const { user, addTournament } = useUserStore();
-  const [activeTournament, setActiveTournament] = useState<Tournament | null>(null);
 
   const handleCreateTournament = () => {
-    if (!user.isPro && user.tournaments.length >= 1) {
-      setIsProModalOpen(true);
-      return;
-    }
-
-    const newTournament: Tournament = {
+    const newTournament = {
       id: crypto.randomUUID(),
       name: `Tournament ${user.tournaments.length + 1}`,
       createdAt: new Date(),
       participants: [],
       matches: [],
     };
-
-    addTournament(newTournament);
-    setActiveTournament(newTournament);
+    
+    const success = addTournament(newTournament);
+    
+    if (!success) {
+      setIsProModalOpen(true);
+    }
   };
 
   return (

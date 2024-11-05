@@ -23,4 +23,5 @@ export interface Tournament {
 export interface User {
   isPro: boolean;
   tournaments: Tournament[];
+  lastPaymentDate: string | null;
 }

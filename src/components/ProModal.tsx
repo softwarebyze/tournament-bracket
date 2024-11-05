@@ -47,46 +47,39 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
 
   if (!isOpen) return null;
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (priceId: string) => {
+    setLoading(true);
     setError(null);
+    
     try {
-      setLoading(true);
-      const stripe = await stripePromise;
-      
-      if (!stripe) throw new Error('Stripe failed to load');
-
-      const response = await fetch('/api/create-checkout-session', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          priceId: selectedPlan.priceId,
-          planId: selectedPlan.id
-        }),
+        body: JSON.stringify({ priceId }),
       });
 
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
 
-      const session = await response.json();
+      const { sessionId } = await response.json();
+      const stripe = await stripePromise;
+      
+      if (!stripe) {
+        throw new Error('Stripe not initialized');
+      }
 
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: session.id,
-      });
-
-      if (error) throw error;
+      const { error } = await stripe.redirectToCheckout({ sessionId });
+      
+      if (error) {
+        throw error;
+      }
       
     } catch (error) {
       console.error('Payment failed:', error);
       setError('Payment failed. Please try again.');
-      
-      // For demo only - remove in production
-      if (process.env.NODE_ENV === 'development') {
-        setProStatus(true);
-        onClose();
-      }
     } finally {
       setLoading(false);
     }
@@ -136,7 +129,7 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
           )}
 
           <button
-            onClick={handleUpgrade}
+            onClick={() => handleUpgrade(selectedPlan.priceId)}
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-4 rounded-lg hover:bg-indigo-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >

@@ -5,7 +5,7 @@ import { User, Tournament } from '../types';
 interface UserStore {
   user: User;
   setProStatus: (isPro: boolean) => void;
-  addTournament: (tournament: Tournament) => void;
+  addTournament: (tournament: Tournament) => boolean;
   removeTournament: (id: string) => void;
   checkAccess: () => boolean;
 }
@@ -27,8 +27,9 @@ export const useUserStore = create<UserStore>()(
       })),
       addTournament: (tournament) => {
         const state = get();
-        if (!state.checkAccess()) {
-          throw new Error('Pro subscription required');
+        // Allow first tournament for free users, or any number for pro users
+        if (!state.user.isPro && state.user.tournaments.length >= 1) {
+          return false;
         }
         set((state) => ({
           user: {
@@ -36,6 +37,7 @@ export const useUserStore = create<UserStore>()(
             tournaments: [tournament, ...state.user.tournaments]
           }
         }));
+        return true;
       },
       removeTournament: (id) => set((state) => ({
         user: {
@@ -45,10 +47,12 @@ export const useUserStore = create<UserStore>()(
       })),
       checkAccess: () => {
         const state = get();
-        if (!state.user.isPro) return false;
+        // Free users can create 1 tournament
+        if (!state.user.isPro) return state.user.tournaments.length < 1;
+        
+        // Pro users need valid subscription
         if (!state.user.lastPaymentDate) return false;
         
-        // Check if subscription is still valid (30 days)
         const lastPayment = new Date(state.user.lastPaymentDate);
         const now = new Date();
         const diffTime = Math.abs(now.getTime() - lastPayment.getTime());
