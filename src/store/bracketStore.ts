@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export interface Participant {
   id: string;
@@ -26,6 +28,16 @@ interface BracketStore {
   updateMatch: (matchId: string, winner: Participant) => void;
   resetTournament: () => void;
   reorderParticipants: (participants: Participant[]) => void;
+  exportBracket: (format: 'pdf' | 'json') => Promise<void>;
+  bracketTemplates: BracketTemplate[];
+  applyTemplate: (templateId: string) => void;
+}
+
+interface BracketTemplate {
+  id: string;
+  name: string;
+  description: string;
+  structure: 'single' | 'double' | 'round-robin';
 }
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -39,7 +51,7 @@ function shuffleArray<T>(array: T[]): T[] {
 
 export const useBracketStore = create<BracketStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       participants: [],
       matches: [],
       isStarted: false,
@@ -125,6 +137,53 @@ export const useBracketStore = create<BracketStore>()(
         matches: [],
         isStarted: false
       }),
+
+      exportBracket: async (format) => {
+        if (format === 'pdf') {
+          const element = document.querySelector('.bracket-container');
+          if (!element) return;
+          
+          const canvas = await html2canvas(element);
+          const pdf = new jsPDF('l', 'mm', 'a4');
+          const imgData = canvas.toDataURL('image/png');
+          pdf.addImage(imgData, 'PNG', 10, 10, 280, 150);
+          pdf.save('tournament-bracket.pdf');
+        } else {
+          const state = get();
+          const data = {
+            participants: state.participants,
+            matches: state.matches,
+          };
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'tournament-bracket.json';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      },
+
+      bracketTemplates: [
+        {
+          id: 'single-elimination',
+          name: 'Single Elimination',
+          description: 'Standard tournament bracket',
+          structure: 'single'
+        },
+        {
+          id: 'double-elimination',
+          name: 'Double Elimination',
+          description: 'Two chances to advance',
+          structure: 'double'
+        }
+      ],
+
+      applyTemplate: (templateId) => {
+        // Template logic implementation
+      }
     }),
     {
       name: 'tournament-bracket-storage',

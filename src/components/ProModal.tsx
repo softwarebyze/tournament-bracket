@@ -3,7 +3,7 @@ import { Crown, Check, Loader } from 'lucide-react';
 import { useUserStore } from '../store/userStore';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(process.env.STRIPE_PUBLIC_KEY || 'your_stripe_public_key');
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 
 interface ProModalProps {
   isOpen: boolean;

@@ -1,5 +1,4 @@
-import React from 'react';
-import { Trophy, RotateCcw } from 'lucide-react';
+import { Trophy, RotateCcw, Download, Share2 } from 'lucide-react';
 import { useBracketStore, Match as MatchType } from '../store/bracketStore';
 
 function Match({ match }: { match: MatchType }) {
@@ -45,7 +44,7 @@ function Match({ match }: { match: MatchType }) {
 }
 
 export function Bracket() {
-  const { matches, isStarted, resetTournament } = useBracketStore();
+  const { matches, isStarted, resetTournament, exportBracket } = useBracketStore();
   
   if (!isStarted || matches.length === 0) {
     return null;
@@ -69,13 +68,29 @@ export function Bracket() {
 
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900">Tournament Bracket</h2>
-        <button
-          onClick={resetTournament}
-          className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Reset Tournament
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => exportBracket('pdf')}
+            className="flex items-center gap-2 px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Export PDF
+          </button>
+          <button
+            onClick={() => exportBracket('json')}
+            className="flex items-center gap-2 px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+          >
+            <Share2 className="w-4 h-4" />
+            Export JSON
+          </button>
+          <button
+            onClick={resetTournament}
+            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-8 overflow-x-auto pb-6">
