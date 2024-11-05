@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Crown, Check, Loader } from 'lucide-react';
-import { useUserStore } from '../store/userStore';
 import { loadStripe } from '@stripe/stripe-js';
+import { useSearchParams } from 'react-router-dom';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 
@@ -10,7 +10,8 @@ const PLANS = [
     id: 'basic',
     name: 'Basic',
     price: 4.99,
-    priceId: 'price_basic',
+    priceId: 'price_1QHhWpGDzOU1ivavIUPI4N1w',
+    productId: 'prod_RA1Z1QvWFr76vG',
     features: [
       'Up to 8 tournaments',
       'Single elimination brackets',
@@ -22,7 +23,8 @@ const PLANS = [
     id: 'premium',
     name: 'Premium',
     price: 9.99,
-    priceId: 'price_premium',
+    priceId: 'price_1QHhXCGDzOU1ivavzZ9U9Lt0',
+    productId: 'prod_RA1aw9LXwuSNsn',
     features: [
       'Unlimited tournaments',
       'All bracket formats',
@@ -40,10 +42,21 @@ interface ProModalProps {
 }
 
 export function ProModal({ isOpen, onClose }: ProModalProps) {
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[1]);
   const [error, setError] = useState<string | null>(null);
-  const setProStatus = useUserStore(state => state.setProStatus);
+
+  // Check for successful payment
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const sessionId = searchParams.get('session_id');
+    
+    if (success === 'true' && sessionId) {
+      // TODO: Verify session with server
+      onClose();
+    }
+  }, [searchParams, onClose]);
 
   if (!isOpen) return null;
 
@@ -52,12 +65,16 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
     setError(null);
     
     try {
+      console.log('Creating checkout session for:', priceId);
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ 
+          priceId,
+          productId: selectedPlan.productId 
+        }),
       });
 
       if (!response.ok) {

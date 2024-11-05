@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Trophy, Plus, ArrowLeft } from 'lucide-react';
 import { ParticipantList } from './ParticipantList';
 import { Bracket } from './Bracket';
