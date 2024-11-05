@@ -38,6 +38,9 @@ interface BracketTemplate {
   name: string;
   description: string;
   structure: 'single' | 'double' | 'round-robin';
+  minParticipants?: number;
+  maxParticipants?: number;
+  priceId?: string;
 }
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -140,14 +143,28 @@ export const useBracketStore = create<BracketStore>()(
 
       exportBracket: async (format) => {
         if (format === 'pdf') {
-          const element = document.querySelector('.bracket-container');
+          const element = document.querySelector('.bracket-container') as HTMLElement;
           if (!element) return;
           
-          const canvas = await html2canvas(element);
-          const pdf = new jsPDF('l', 'mm', 'a4');
-          const imgData = canvas.toDataURL('image/png');
-          pdf.addImage(imgData, 'PNG', 10, 10, 280, 150);
-          pdf.save('tournament-bracket.pdf');
+          try {
+            const canvas = await html2canvas(element, {
+              scale: 2, // Higher quality
+              logging: false,
+              useCORS: true
+            });
+            
+            const imgWidth = 297; // A4 width in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const imgData = canvas.toDataURL('image/png');
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.save(`tournament-bracket-${new Date().toISOString().split('T')[0]}.pdf`);
+          } catch (error) {
+            console.error('PDF export failed:', error);
+            throw new Error('Failed to export PDF');
+          }
         } else {
           const state = get();
           const data = {
@@ -170,14 +187,29 @@ export const useBracketStore = create<BracketStore>()(
         {
           id: 'single-elimination',
           name: 'Single Elimination',
-          description: 'Standard tournament bracket',
-          structure: 'single'
+          description: 'Classic tournament format',
+          structure: 'single',
+          minParticipants: 4,
+          maxParticipants: 64,
+          priceId: 'price_basic'
         },
         {
           id: 'double-elimination',
           name: 'Double Elimination',
           description: 'Two chances to advance',
-          structure: 'double'
+          structure: 'double',
+          minParticipants: 4,
+          maxParticipants: 32,
+          priceId: 'price_premium'
+        },
+        {
+          id: 'round-robin',
+          name: 'Round Robin',
+          description: 'Everyone plays everyone',
+          structure: 'round-robin',
+          minParticipants: 3,
+          maxParticipants: 16,
+          priceId: 'price_premium'
         }
       ],
 
